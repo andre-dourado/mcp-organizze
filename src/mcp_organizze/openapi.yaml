@@ -41,6 +41,7 @@ components:
     DateString:
       type: string
       format: date
+      description: "Data no formato ISO YYYY-MM-DD (ex: 2026-05-23)."
       example: "2015-09-01"
 
     DateTimeString:
@@ -141,6 +142,7 @@ components:
         default:
           type: boolean
           default: false
+          description: "Se true, define esta como a conta padrão do usuário."
 
     # --- Categories ---
     Category:
@@ -186,6 +188,7 @@ components:
         parent_id:
           type: integer
           nullable: true
+          description: "ID da categoria pai (informe para criar uma subcategoria)."
 
     # --- Budgets ---
     Budget:
@@ -454,6 +457,7 @@ components:
            $ref: '#/components/schemas/PriceCents'
         paid:
             type: boolean
+            description: "Se a movimentação já foi paga/efetivada. Em cartão de crédito normalmente é false (quita ao pagar a fatura)."
         account_id:
             type: integer
             description: "Conta bancária. Use isto OU credit_card_id, não ambos."
@@ -462,6 +466,7 @@ components:
             description: "Cartão de crédito. Informe para lançar direto na fatura do cartão (em vez de account_id)."
         category_id:
             type: integer
+            description: "ID da categoria da movimentação."
         notes:
           type: string
         tags:
@@ -487,6 +492,7 @@ components:
            $ref: '#/components/schemas/PriceCents'
         paid:
             type: boolean
+            description: "Se a movimentação já foi paga/efetivada. Em cartão de crédito normalmente é false (quita ao pagar a fatura)."
         account_id:
             type: integer
             description: "Conta bancária. Use isto OU credit_card_id, não ambos."
@@ -495,6 +501,7 @@ components:
             description: "Cartão de crédito. Informe para mover a movimentação para a fatura do cartão (em vez de account_id)."
         category_id:
             type: integer
+            description: "ID da categoria da movimentação."
         notes:
           type: string
         tags:
@@ -635,6 +642,7 @@ components:
                 $ref: '#/components/schemas/DateString'
             paid:
                 type: boolean
+                description: "Se a transferência já foi efetivada."
             tags:
                  type: array
                  items:

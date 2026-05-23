@@ -719,7 +719,7 @@ wheels = [
 
 [[package]]
 name = "mcp-organizze"
-version = "0.1.3"
+version = "0.1.4"
 source = { editable = "." }
 dependencies = [
     { name = "fastmcp" },
