@@ -20,6 +20,13 @@ dependencies = [
     "uvicorn~=0.40.0"
 ]
 
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
 [project.scripts]
 mcp-organizze = "mcp_organizze.__main__:main"
 

@@ -276,7 +276,29 @@ components:
           description: Dia de fechamento
         limit_cents:
           $ref: '#/components/schemas/PriceCents'
-    
+
+    CreditCardUpdateInput:
+      type: object
+      description: |
+        Campos para atualização (PUT) de um cartão de crédito. Todos são
+        opcionais: envie apenas os campos que deseja alterar.
+      properties:
+        name:
+          type: string
+        card_network:
+          $ref: '#/components/schemas/CreditCardNetwork'
+        due_day:
+          type: integer
+          description: Dia de vencimento
+        closing_day:
+          type: integer
+          description: Dia de fechamento
+        limit_cents:
+          $ref: '#/components/schemas/PriceCents'
+        update_invoices_since:
+          type: string
+          format: date
+
     CreditCardInvoice:
       type: object
       properties:
@@ -446,7 +468,42 @@ components:
             $ref: '#/components/schemas/RecurrenceAttributes'
         installments_attributes:
             $ref: '#/components/schemas/InstallmentsAttributes'
-            
+
+    TransactionUpdateInput:
+      type: object
+      description: |
+        Campos para atualização (PUT) de uma movimentação. Todos são opcionais:
+        envie apenas os campos que deseja alterar (atualização parcial).
+      properties:
+        description:
+          type: string
+        date:
+          $ref: '#/components/schemas/DateString'
+        amount_cents:
+           $ref: '#/components/schemas/PriceCents'
+        paid:
+            type: boolean
+        account_id:
+            type: integer
+        category_id:
+            type: integer
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        recurrence_attributes:
+            $ref: '#/components/schemas/RecurrenceAttributes'
+        installments_attributes:
+            $ref: '#/components/schemas/InstallmentsAttributes'
+        update_future:
+          type: boolean
+          description: Atualizar esta e as próximas ocorrências (se recorrente)
+        update_all:
+          type: boolean
+          description: Atualizar todas as ocorrências (se recorrente)
+
     # --- Transfers ---
     Transfer:
         $ref: '#/components/schemas/Transaction'
@@ -901,13 +958,7 @@ paths:
         content:
           application/json:
             schema:
-              allOf:
-                - $ref: '#/components/schemas/CreditCardInput'
-                - type: object
-                  properties:
-                     update_invoices_since:
-                        type: string
-                        format: date
+              $ref: '#/components/schemas/CreditCardUpdateInput'
       responses:
         '200':
           description: Cartão atualizado
@@ -1097,16 +1148,7 @@ paths:
         content:
           application/json:
             schema:
-              allOf:
-                - $ref: '#/components/schemas/TransactionInput'
-                - type: object
-                  properties:
-                    update_future:
-                      type: boolean
-                      description: Atualizar esta e as próximas ocorrências (se recorrente)
-                    update_all:
-                      type: boolean
-                      description: Atualizar todas as ocorrências (se recorrente)
+              $ref: '#/components/schemas/TransactionUpdateInput'
       responses:
         '200':
           description: Movimentação atualizada

@@ -87,8 +87,22 @@ python -m mcp_organizze
 ### Estrutura do Projeto
 
 - `src/mcp_organizze`: Código fonte do pacote.
+- `src/mcp_organizze/openapi.yaml`: Especificação da API; as ferramentas MCP são geradas automaticamente a partir dela (`FastMCP.from_openapi`).
+- `tests/`: Smoke tests da geração de ferramentas.
 - `pyproject.toml`: Configuração de build e dependências.
 - `Dockerfile`: Configuração para containerização.
 - `.github/workflows`: Actions para CI/CD.
+
+### Testes
+
+As ferramentas MCP são geradas a partir do `openapi.yaml` no startup. Como alterações na spec podem continuar sendo YAML válido e ainda assim gerar ferramentas incompletas (ex.: o FastMCP não achata `allOf` em `requestBody`, fazendo os campos do corpo sumirem da ferramenta), há uma suíte de smoke tests para pegar essas regressões silenciosas.
+
+Rode com:
+
+```bash
+uv run --group dev pytest -q
+```
+
+Os testes verificam que as ferramentas são geradas, que as principais existem, que `updateTransaction` permite atualização parcial (apenas `id` obrigatório, expondo os campos do corpo) e fazem um lint na spec barrando o uso de `allOf` em `requestBody`.
 
 <!-- mcp-name: io.github.SamuelMoraesF/mcp-organizze -->
