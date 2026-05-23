@@ -7,11 +7,14 @@ achata, fazendo os campos do corpo sumirem da tool).
 """
 
 import asyncio
+import json
 import os
 
+import httpx
 import pytest
 import yaml
 
+from mcp_organizze import server
 from mcp_organizze.server import mcp
 
 OPENAPI_PATH = os.path.join(
@@ -51,13 +54,22 @@ def test_core_tools_exist(tools):
 
 def test_create_transaction_requires_core_fields(tools):
     schema = tools["createTransaction"].parameters
+    # account_id/category_id NÃO são obrigatórios: lançamentos em cartão usam
+    # credit_card_id no lugar de account_id.
     assert set(schema.get("required", [])) == {
         "description",
         "date",
         "amount_cents",
-        "account_id",
-        "category_id",
     }
+
+
+def test_create_transaction_supports_credit_card(tools):
+    """Regressão (bug 1): sem credit_card_id não há como lançar direto no
+    cartão, e a API acaba jogando na conta default. account_id e credit_card_id
+    devem coexistir como alternativas, nenhum obrigatório."""
+    props = tools["createTransaction"].parameters.get("properties", {})
+    assert "credit_card_id" in props, "createTransaction não expõe credit_card_id"
+    assert "account_id" in props
 
 
 def test_update_transaction_allows_partial_update(tools):
@@ -103,3 +115,33 @@ def test_no_request_body_uses_allof(spec):
         "requestBody com allOf (achatado incorretamente pelo FastMCP): "
         + ", ".join(offenders)
     )
+
+
+def test_create_transaction_serializes_body(monkeypatch):
+    """Regressão (bugs 1 e 2): o corpo enviado à API deve conter exatamente os
+    campos informados — `date` como string ISO (não null) e `credit_card_id`
+    (não substituído nem descartado). Intercepta a requisição HTTP real.
+    """
+    captured = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(201, json={"id": 1})
+
+    monkeypatch.setattr(server.client, "_transport", httpx.MockTransport(handler))
+
+    tools = asyncio.run(mcp.get_tools())
+    args = {
+        "description": "Compra cartao",
+        "date": "2026-05-23",
+        "amount_cents": 15000,
+        "credit_card_id": 2157726,
+        "paid": False,
+        "category_id": 999,
+    }
+    asyncio.run(tools["createTransaction"].run(args))
+
+    body = captured["body"]
+    assert body["date"] == "2026-05-23", "date não chegou como string ISO no corpo"
+    assert body["credit_card_id"] == 2157726, "credit_card_id foi perdido/sobrescrito"
+    assert "account_id" not in body, "account_id não deveria ser injetado"

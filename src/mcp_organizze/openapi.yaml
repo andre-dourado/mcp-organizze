@@ -444,7 +444,7 @@ components:
 
     TransactionInput:
       type: object
-      required: [description, date, amount_cents, account_id, category_id]
+      required: [description, date, amount_cents]
       properties:
         description:
           type: string
@@ -456,6 +456,10 @@ components:
             type: boolean
         account_id:
             type: integer
+            description: "Conta bancária. Use isto OU credit_card_id, não ambos."
+        credit_card_id:
+            type: integer
+            description: "Cartão de crédito. Informe para lançar direto na fatura do cartão (em vez de account_id)."
         category_id:
             type: integer
         notes:
@@ -485,6 +489,10 @@ components:
             type: boolean
         account_id:
             type: integer
+            description: "Conta bancária. Use isto OU credit_card_id, não ambos."
+        credit_card_id:
+            type: integer
+            description: "Cartão de crédito. Informe para mover a movimentação para a fatura do cartão (em vez de account_id)."
         category_id:
             type: integer
         notes:
