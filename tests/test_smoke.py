@@ -117,6 +117,34 @@ def test_no_request_body_uses_allof(spec):
     )
 
 
+def test_required_fields_have_inline_type(tools):
+    """Regressão: campos obrigatórios não podem ser um `$ref` pelado. Um $ref
+    sem `type` no nível da propriedade é visto como "any" por clientes que não
+    dereferenciam $defs, e "any" aceita null — foi o que fazia o LLM enviar
+    `date: null` / `amount_cents: -1`. Devem ter `type` inline."""
+    for tool_name in ("createTransaction", "updateTransaction"):
+        props = tools[tool_name].parameters.get("properties", {})
+        for field in ("date", "amount_cents"):
+            prop = props[field]
+            assert "type" in prop and "$ref" not in prop, (
+                f"{tool_name}.{field} deve ter `type` inline, não um $ref pelado: {prop}"
+            )
+
+
+def test_enum_inputs_are_inline(tools):
+    """Regressão: enums de entrada (type da conta, card_network do cartão) não
+    podem ser um `$ref` pelado. Como "any", o modelo perde a lista de valores
+    válidos e pode mandar 'Visa'/'corrente' em vez de 'visa'/'checking'."""
+    cases = {
+        "createAccount": "type",
+        "createCreditCard": "card_network",
+    }
+    for tool_name, field in cases.items():
+        prop = tools[tool_name].parameters["properties"][field]
+        assert "$ref" not in prop, f"{tool_name}.{field} ainda é um $ref pelado"
+        assert prop.get("enum"), f"{tool_name}.{field} deve expor a lista de enum inline"
+
+
 def test_create_transaction_serializes_body(monkeypatch):
     """Regressão (bugs 1 e 2): o corpo enviado à API deve conter exatamente os
     campos informados — `date` como string ISO (não null) e `credit_card_id`

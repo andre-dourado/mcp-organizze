@@ -135,7 +135,9 @@ components:
           type: string
           example: "Itaú CC"
         type:
-          $ref: '#/components/schemas/AccountType'
+          type: string
+          enum: [checking, savings, other]
+          description: "Tipo da conta."
         description:
           type: string
           example: "Minha conta corrente"
@@ -270,7 +272,9 @@ components:
         name:
           type: string
         card_network:
-          $ref: '#/components/schemas/CreditCardNetwork'
+          type: string
+          enum: [visa, mastercard, amex, elo, hipercard, others, default]
+          description: "Bandeira do cartão."
         due_day:
           type: integer
           description: Dia de vencimento
@@ -278,7 +282,9 @@ components:
           type: integer
           description: Dia de fechamento
         limit_cents:
-          $ref: '#/components/schemas/PriceCents'
+          type: integer
+          description: "Limite do cartão em centavos (ex: 500000 = R$ 5.000,00)."
+          example: 500000
 
     CreditCardUpdateInput:
       type: object
@@ -289,7 +295,9 @@ components:
         name:
           type: string
         card_network:
-          $ref: '#/components/schemas/CreditCardNetwork'
+          type: string
+          enum: [visa, mastercard, amex, elo, hipercard, others, default]
+          description: "Bandeira do cartão."
         due_day:
           type: integer
           description: Dia de vencimento
@@ -297,7 +305,9 @@ components:
           type: integer
           description: Dia de fechamento
         limit_cents:
-          $ref: '#/components/schemas/PriceCents'
+          type: integer
+          description: "Limite do cartão em centavos (ex: 500000 = R$ 5.000,00)."
+          example: 500000
         update_invoices_since:
           type: string
           format: date
@@ -347,22 +357,6 @@ components:
                 $ref: '#/components/schemas/Transaction'
 
     # --- Transactions ---
-    RecurrenceAttributes:
-      type: object
-      properties:
-        periodicity:
-          type: string
-          enum: [monthly, yearly, weekly, biweekly, bimonthly, trimonthly]
-
-    InstallmentsAttributes:
-      type: object
-      properties:
-        periodicity:
-          type: string
-          enum: [monthly, yearly, weekly, biweekly, bimonthly, trimonthly]
-        total:
-          type: integer
-    
     Transaction:
       type: object
       properties:
@@ -452,9 +446,14 @@ components:
         description:
           type: string
         date:
-          $ref: '#/components/schemas/DateString'
+          type: string
+          format: date
+          description: "OBRIGATÓRIO. Data da movimentação no formato ISO YYYY-MM-DD (ex: 2026-05-23). Nunca envie null."
+          example: "2026-05-23"
         amount_cents:
-           $ref: '#/components/schemas/PriceCents'
+          type: integer
+          description: "OBRIGATÓRIO. Valor em centavos (ex: 15000 = R$ 150,00). Despesas são negativas, receitas positivas. Nunca envie null."
+          example: -15000
         paid:
             type: boolean
             description: "Se a movimentação já foi paga/efetivada. Em cartão de crédito normalmente é false (quita ao pagar a fatura)."
@@ -474,9 +473,22 @@ components:
           items:
             $ref: '#/components/schemas/Tag'
         recurrence_attributes:
-            $ref: '#/components/schemas/RecurrenceAttributes'
+            type: object
+            description: "Para movimentação recorrente (fixa)."
+            properties:
+              periodicity:
+                type: string
+                enum: [monthly, yearly, weekly, biweekly, bimonthly, trimonthly]
         installments_attributes:
-            $ref: '#/components/schemas/InstallmentsAttributes'
+            type: object
+            description: "Para movimentação parcelada."
+            properties:
+              periodicity:
+                type: string
+                enum: [monthly, yearly, weekly, biweekly, bimonthly, trimonthly]
+              total:
+                type: integer
+                description: "Número total de parcelas."
 
     TransactionUpdateInput:
       type: object
@@ -487,9 +499,14 @@ components:
         description:
           type: string
         date:
-          $ref: '#/components/schemas/DateString'
+          type: string
+          format: date
+          description: "Data da movimentação no formato ISO YYYY-MM-DD (ex: 2026-05-23). Se enviar, não use null."
+          example: "2026-05-23"
         amount_cents:
-           $ref: '#/components/schemas/PriceCents'
+          type: integer
+          description: "Valor em centavos (ex: 15000 = R$ 150,00). Despesas são negativas, receitas positivas."
+          example: -15000
         paid:
             type: boolean
             description: "Se a movimentação já foi paga/efetivada. Em cartão de crédito normalmente é false (quita ao pagar a fatura)."
@@ -509,9 +526,22 @@ components:
           items:
             $ref: '#/components/schemas/Tag'
         recurrence_attributes:
-            $ref: '#/components/schemas/RecurrenceAttributes'
+            type: object
+            description: "Para movimentação recorrente (fixa)."
+            properties:
+              periodicity:
+                type: string
+                enum: [monthly, yearly, weekly, biweekly, bimonthly, trimonthly]
         installments_attributes:
-            $ref: '#/components/schemas/InstallmentsAttributes'
+            type: object
+            description: "Para movimentação parcelada."
+            properties:
+              periodicity:
+                type: string
+                enum: [monthly, yearly, weekly, biweekly, bimonthly, trimonthly]
+              total:
+                type: integer
+                description: "Número total de parcelas."
         update_future:
           type: boolean
           description: Atualizar esta e as próximas ocorrências (se recorrente)
@@ -637,9 +667,14 @@ components:
                 type: integer
                 description: ID da conta de origem (saída)
             amount_cents:
-                $ref: '#/components/schemas/PriceCents'
+                type: integer
+                description: "OBRIGATÓRIO. Valor em centavos (ex: 15000 = R$ 150,00). Nunca envie null."
+                example: 15000
             date:
-                $ref: '#/components/schemas/DateString'
+                type: string
+                format: date
+                description: "OBRIGATÓRIO. Data da transferência no formato ISO YYYY-MM-DD (ex: 2026-05-23). Nunca envie null."
+                example: "2026-05-23"
             paid:
                 type: boolean
                 description: "Se a transferência já foi efetivada."
