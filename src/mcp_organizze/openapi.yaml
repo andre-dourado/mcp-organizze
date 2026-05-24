@@ -448,6 +448,7 @@ components:
         date:
           type: string
           description: "OBRIGATÓRIO. Data da movimentação no formato ISO YYYY-MM-DD (ex: 2026-05-23). Nunca envie null."
+          format: date
           example: "2026-05-23"
         amount_cents:
           type: integer
