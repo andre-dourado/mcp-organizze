@@ -3,6 +3,7 @@ import httpx
 import os
 import logging
 from fastmcp import FastMCP
+from fastmcp.server.middleware import Middleware, MiddlewareContext
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -61,3 +62,29 @@ mcp = FastMCP.from_openapi(
     client=client,
     name="Organizze API"
 )
+
+
+class ClientCallLoggingMiddleware(Middleware):
+    """Loga a tool chamada e os argumentos crus enviados pelo client, antes da
+    validação do FastMCP/pydantic. Útil para ver, por exemplo, quando o modelo
+    manda `date: null`. Visível em `docker compose logs -f mcp-organizze`."""
+
+    async def on_call_tool(self, context: MiddlewareContext, call_next):
+        logger.info(
+            "[tool-call] %s | args=%s",
+            context.message.name,
+            context.message.arguments,
+        )
+        try:
+            return await call_next(context)
+        except Exception as e:
+            logger.error(
+                "[tool-error] %s falhou: %r | args=%s",
+                context.message.name,
+                e,
+                context.message.arguments,
+            )
+            raise
+
+
+mcp.add_middleware(ClientCallLoggingMiddleware())
