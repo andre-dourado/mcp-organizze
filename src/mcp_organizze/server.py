@@ -41,6 +41,30 @@ if not email or not api_key:
     import sys
     print("AVISO: Variáveis de ambiente ORGANIZZE_EMAIL e ORGANIZZE_API_KEY não encontradas.", file=sys.stderr)
 
+
+# Headers de entrada que o FastMCP repassa e que quebram a chamada de saída.
+# `cdn-loop` é o crítico: a API do Organizze fica atrás de Cloudflare e
+# responde 403 (corpo vazio) ao receber um request que já traz esse header.
+_FORWARD_BLOCKLIST = {
+    "cdn-loop", "cf-connecting-ip", "cf-ipcountry", "cf-ray", "cf-visitor",
+    "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto",
+    "x-anthropic-client", "x-cloud-trace-context", "traceparent", "via",
+    "mcp-protocol-version", "mcp-session-id",
+}
+
+
+async def sanitize_request(request: httpx.Request):
+    for h in _FORWARD_BLOCKLIST:
+        request.headers.pop(h, None)
+    request.headers["User-Agent"] = user_agent_custom
+    if logger.isEnabledFor(logging.DEBUG):
+        safe = {
+            k: ("***" if k.lower() == "authorization" else v)
+            for k, v in request.headers.items()
+        }
+        logger.debug("[req] %s %s | headers=%s", request.method, request.url, safe)
+
+
 async def log_response(response: httpx.Response):
     if logger.isEnabledFor(logging.DEBUG) or os.environ.get("DEBUG_RESPONSE") == "true":
         await response.aread()
@@ -54,22 +78,11 @@ client = httpx.AsyncClient(
         "Content-Type": "application/json"
     },
     timeout=30.0,
-    event_hooks={'response': [log_response]}
+    event_hooks={
+        'request': [sanitize_request],
+        'response': [log_response]
+    }
 )
-
-_FORWARD_BLOCKLIST = {
-    "cdn-loop", "cf-connecting-ip", "cf-ipcountry", "cf-ray", "cf-visitor",
-    "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto",
-    "x-anthropic-client", "x-cloud-trace-context", "traceparent", "via",
-    "mcp-protocol-version", "mcp-session-id",
-}
-
-async def sanitize_request(request: httpx.Request):
-    for h in _FORWARD_BLOCKLIST:
-        request.headers.pop(h, None)
-    request.headers["User-Agent"] = user_agent_custom
-
-client.event_hooks["request"] = [sanitize_request]
 
 mcp = FastMCP.from_openapi(
     openapi_spec=openapi_spec,
@@ -80,8 +93,7 @@ mcp = FastMCP.from_openapi(
 
 class ClientCallLoggingMiddleware(Middleware):
     """Loga a tool chamada e os argumentos crus enviados pelo client, antes da
-    validação do FastMCP/pydantic. Útil para ver, por exemplo, quando o modelo
-    manda `date: null`. Visível em `docker compose logs -f mcp-organizze`."""
+    validação do FastMCP/pydantic."""
 
     async def on_call_tool(self, context: MiddlewareContext, call_next):
         logger.info(
@@ -102,8 +114,3 @@ class ClientCallLoggingMiddleware(Middleware):
 
 
 mcp.add_middleware(ClientCallLoggingMiddleware())
-
-async def log_request(request: httpx.Request):
-    logger.info(f"[req] {request.method} {request.url} | headers={dict(request.headers)}")
-
-client.event_hooks['request'] = [log_request]
