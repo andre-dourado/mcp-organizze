@@ -57,6 +57,20 @@ client = httpx.AsyncClient(
     event_hooks={'response': [log_response]}
 )
 
+_FORWARD_BLOCKLIST = {
+    "cdn-loop", "cf-connecting-ip", "cf-ipcountry", "cf-ray", "cf-visitor",
+    "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto",
+    "x-anthropic-client", "x-cloud-trace-context", "traceparent", "via",
+    "mcp-protocol-version", "mcp-session-id",
+}
+
+async def sanitize_request(request: httpx.Request):
+    for h in _FORWARD_BLOCKLIST:
+        request.headers.pop(h, None)
+    request.headers["User-Agent"] = user_agent_custom
+
+client.event_hooks["request"] = [sanitize_request]
+
 mcp = FastMCP.from_openapi(
     openapi_spec=openapi_spec,
     client=client,
