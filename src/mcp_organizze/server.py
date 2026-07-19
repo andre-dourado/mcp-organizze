@@ -88,3 +88,8 @@ class ClientCallLoggingMiddleware(Middleware):
 
 
 mcp.add_middleware(ClientCallLoggingMiddleware())
+
+async def log_request(request: httpx.Request):
+    logger.info(f"[req] {request.method} {request.url} | headers={dict(request.headers)}")
+
+client.event_hooks['request'] = [log_request]
